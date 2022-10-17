@@ -20,6 +20,7 @@ pub fn instantiate(
     let config = Config {
         purchase_price: msg.purchase_price,
         transfer_price: msg.transfer_price,
+        tb_address: msg.tb_address,
     };
     CONFIG.save(deps.storage, &config)?;
 
@@ -33,9 +34,16 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
-    match msg {
-        ExecuteMsg::Register { name } => execute_register(deps, env, info, name),
-        ExecuteMsg::Transfer { name, to } => execute_transfer(deps, env, info, name, to),
+    let config = CONFIG.load(deps.storage)?;
+    if info.sender != config.tb_address {
+        return Err(ContractError::IncorrectTBAddress {});
+    }
+    let execute_msg = msg.execute_msg;
+    let tb_info = msg.tb_info;
+
+    match execute_msg {
+        ExecuteMsg::Register { name } => execute_register(deps, env, tb_info, name),
+        ExecuteMsg::Transfer { name, to } => execute_transfer(deps, env, tb_info, name, to),
     }
 }
 
